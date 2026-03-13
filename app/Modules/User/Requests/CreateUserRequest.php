@@ -21,15 +21,17 @@ class CreateUserRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'name' => 'required|string|max:255',
-            'email' => 'required|email|unique:users,email',
-            'password' => 'required|string|min:8|confirmed',
-            'user_type' => ['required', Rule::in(['client', 'admin', 'manager'])],
-            'phone' => 'nullable|string|max:20',
-            'cpf' => 'nullable|string|size:14|unique:users,cpf',
-            'birth_date' => 'nullable|date|before:today',
-            'is_active' => 'boolean',
-            'email_verified' => 'boolean',
+            'name'         => 'required|string|max:255',
+            'email'        => 'required|email|unique:users,email',
+            'password'     => 'required|string|min:8|confirmed',
+            'user_type'    => ['required', Rule::in(['client', 'admin', 'manager'])],
+            'person_type'  => ['nullable', Rule::in(['pf', 'pj'])],
+            'phone'        => 'nullable|string|max:20',
+            'cpf'          => 'nullable|string|size:14|unique:users,cpf',
+            'cnpj'         => 'nullable|string|size:18|unique:users,cnpj',
+            'company_name' => 'nullable|string|max:255',
+            'birth_date'   => 'nullable|date|before:today',
+            'is_active'    => 'boolean',
         ];
     }
 
@@ -50,10 +52,13 @@ class CreateUserRequest extends FormRequest
             'user_type.required' => 'O tipo de usuário é obrigatório.',
             'user_type.in' => 'O tipo de usuário deve ser: client, admin ou manager.',
             'phone.max' => 'O telefone não pode ter mais de 20 caracteres.',
-            'cpf.size' => 'O CPF deve ter exatamente 14 caracteres (com formatação).',
-            'cpf.unique' => 'Este CPF já está sendo usado.',
-            'birth_date.date' => 'A data de nascimento deve ser uma data válida.',
-            'birth_date.before' => 'A data de nascimento deve ser anterior a hoje.',
+            'cpf.size'           => 'O CPF deve ter exatamente 14 caracteres (com formatação).',
+            'cpf.unique'         => 'Este CPF já está sendo usado.',
+            'cnpj.size'          => 'O CNPJ deve ter exatamente 18 caracteres (com formatação).',
+            'cnpj.unique'        => 'Este CNPJ já está sendo usado.',
+            'company_name.max'   => 'A razão social não pode ter mais de 255 caracteres.',
+            'birth_date.date'    => 'A data de nascimento deve ser uma data válida.',
+            'birth_date.before'  => 'A data de nascimento deve ser anterior a hoje.',
         ];
     }
 
@@ -76,11 +81,19 @@ class CreateUserRequest extends FormRequest
             ]);
         }
 
+        // Formatar CNPJ se fornecido
+        if ($this->cnpj) {
+            $cnpj = preg_replace('/\D/', '', $this->cnpj);
+            $this->merge([
+                'cnpj' => preg_replace('/(\d{2})(\d{3})(\d{3})(\d{4})(\d{2})/', '$1.$2.$3/$4-$5', $cnpj)
+            ]);
+        }
+
         // Definir valores padrão
         $this->merge([
-            'is_active' => $this->is_active ?? true,
-            'email_verified' => $this->email_verified ?? false,
-            'user_type' => $this->user_type ?? 'client',
+            'is_active'   => $this->is_active ?? true,
+            'user_type'   => $this->user_type ?? 'client',
+            'person_type' => $this->person_type ?? 'pf',
         ]);
     }
 
@@ -120,10 +133,12 @@ class CreateUserRequest extends FormRequest
             'password' => 'senha',
             'user_type' => 'tipo de usuário',
             'phone' => 'telefone',
-            'cpf' => 'CPF',
-            'birth_date' => 'data de nascimento',
-            'is_active' => 'ativo',
-            'email_verified' => 'email verificado',
+            'person_type'  => 'tipo de pessoa',
+            'cpf'          => 'CPF',
+            'cnpj'         => 'CNPJ',
+            'company_name' => 'razão social',
+            'birth_date'   => 'data de nascimento',
+            'is_active'    => 'ativo',
         ];
     }
 }
